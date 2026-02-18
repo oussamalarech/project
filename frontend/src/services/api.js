@@ -57,10 +57,19 @@ export const ordersAPI = {
   updateStatus: (id, status) => api.put(`/api/orders/${id}/status`, { status }),
 };
 
-export const getImageUrl = (path) => {
+/*export const getImageUrl = (path) => {
   if (!path) return null;
   const normalized = path.startsWith('/') ? path : `/${path}`;
   return `/uploads${normalized}`;
+};*/
+
+const BACKEND_URL = import.meta.env.VITE_API_URL; // your Render backend URL from .env
+
+export const getImageUrl = (path) => {
+  if (!path) return null;
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  return `${BACKEND_URL}/uploads${normalized}`;
 };
+
 
 export default api;
