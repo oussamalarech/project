@@ -1,10 +1,8 @@
 const Product = require('../models/Product');
-const path = require('path');
-const fs = require('fs');
+const cloudinary = require('../config/cloudinary');
 
 /**
  * @route   GET /api/products
- * @desc    Get all products
  */
 const getProducts = async (req, res) => {
   try {
@@ -17,19 +15,14 @@ const getProducts = async (req, res) => {
 
 /**
  * @route   GET /api/products/:id
- * @desc    Get single product by ID
  */
 const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
+    if (!product) return res.status(404).json({ message: 'Product not found' });
     res.json(product);
   } catch (error) {
-    if (error.kind === 'ObjectId') {
-      return res.status(404).json({ message: 'Product not found' });
-    }
+    if (error.kind === 'ObjectId') return res.status(404).json({ message: 'Product not found' });
     res.status(500).json({ message: 'Failed to fetch product' });
   }
 };
@@ -42,10 +35,13 @@ const createProduct = async (req, res) => {
   try {
     const { name, description, price, category, stock } = req.body;
 
-    // Build image path from Multer if file was uploaded
-    let imagePath = null;
+    let imageUrl = '';
     if (req.file) {
-      imagePath = `products/${req.file.filename}`;
+      // Upload to Cloudinary
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'phone-store-products',
+      });
+      imageUrl = result.secure_url; // full URL
     }
 
     const product = await Product.create({
@@ -54,7 +50,7 @@ const createProduct = async (req, res) => {
       price: Number(price),
       category,
       stock: Number(stock) || 0,
-      image: imagePath,
+      image: imageUrl, // save full Cloudinary URL
     });
 
     res.status(201).json(product);
@@ -74,65 +70,46 @@ const createProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
+    if (!product) return res.status(404).json({ message: 'Product not found' });
 
     const { name, description, price, category, stock } = req.body;
-
     if (name !== undefined) product.name = name;
     if (description !== undefined) product.description = description;
     if (price !== undefined) product.price = Number(price);
     if (category !== undefined) product.category = category;
     if (stock !== undefined) product.stock = Number(stock);
 
-    // Replace image if new file uploaded
+    // Upload new image if provided
     if (req.file) {
-      // Remove old image file if it exists
-      if (product.image) {
-        const oldPath = path.join(__dirname, '../uploads', product.image);
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
-        }
-      }
-      product.image = `products/${req.file.filename}`;
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'phone-store-products',
+      });
+      product.image = result.secure_url; // save full URL
     }
 
     await product.save();
     res.json(product);
   } catch (error) {
-    if (error.kind === 'ObjectId') {
-      return res.status(404).json({ message: 'Product not found' });
-    }
+    if (error.kind === 'ObjectId') return res.status(404).json({ message: 'Product not found' });
     res.status(500).json({ message: 'Failed to update product' });
   }
 };
 
 /**
  * @route   DELETE /api/products/:id
- * @desc    Delete product (admin only)
  */
 const deleteProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
+    if (!product) return res.status(404).json({ message: 'Product not found' });
 
-    // Remove associated image file if exists
-    if (product.image) {
-      const imagePath = path.join(__dirname, '../uploads', product.image);
-      if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath);
-      }
-    }
+    // Optional: delete from Cloudinary if needed
+    // if (product.image) await cloudinary.uploader.destroy(publicId);
 
     await Product.findByIdAndDelete(req.params.id);
     res.json({ message: 'Product removed' });
   } catch (error) {
-    if (error.kind === 'ObjectId') {
-      return res.status(404).json({ message: 'Product not found' });
-    }
+    if (error.kind === 'ObjectId') return res.status(404).json({ message: 'Product not found' });
     res.status(500).json({ message: 'Failed to delete product' });
   }
 };
