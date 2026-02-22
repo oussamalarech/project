@@ -65,11 +65,7 @@ export const ordersAPI = {
 
 const BACKEND_URL = import.meta.env.VITE_API_URL; // your Render backend URL from .env
 
-export const getImageUrl = (path) => {
-  if (!path) return null;
-  const normalized = path.startsWith('/') ? path : `/${path}`;
-  return `${BACKEND_URL}/uploads${normalized}`;
-};
+export const getImageUrl = (path) => path;
 
 
 export default api;
