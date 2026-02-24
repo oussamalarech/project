@@ -8,8 +8,8 @@ export default function Home() {
      You can freely add/remove images or videos here
   ----------------------------- */
   const banners = [
-    { type: 'image', src: '/banners/banner1.jpg' },
-    { type: 'image', src: '/banners/banner2.jpg' },
+    { type: 'image', src: '/banners/banner1.png' },
+    //{ type: 'image', src: '/banners/banner2.jpg' },
     { type: 'video', src: '/banners/banner3.webm' },
   ];
 
